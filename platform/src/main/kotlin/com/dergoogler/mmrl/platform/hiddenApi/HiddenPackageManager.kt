@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
+import android.content.pm.ParceledListSlice
 import android.content.pm.ResolveInfo
 import android.os.SystemProperties
 import android.util.Log
@@ -60,10 +61,31 @@ class HiddenPackageManager(
         userId: Int,
     ): List<PackageInfo> =
         if (BuildCompat.atLeastT) {
-            packageManager.getInstalledPackages(flags.toLong(), userId)
+            getInstalledPackagesSdk33(flags.toLong(), userId)
         } else {
             packageManager.getInstalledPackages(flags, userId)
         }.list
+
+    @Suppress("UNCHECKED_CAST")
+    private fun getInstalledPackagesSdk33(
+        flags: Long,
+        userId: Int,
+    ): ParceledListSlice<PackageInfo> =
+        try {
+            packageManager.getInstalledPackages(flags, userId)
+        } catch (e: NoSuchMethodError) {
+            try {
+                val method =
+                    packageManager.javaClass.getMethod(
+                        "getInstalledPackages",
+                        Long::class.javaPrimitiveType,
+                        Int::class.javaPrimitiveType,
+                    )
+                method.invoke(packageManager, flags, userId) as ParceledListSlice<PackageInfo>
+            } catch (e: ReflectiveOperationException) {
+                throw IllegalStateException("Failed to get installed packages on SDK 37", e)
+            }
+        }
 
     fun getInstalledApplications(
         flags: Int,
