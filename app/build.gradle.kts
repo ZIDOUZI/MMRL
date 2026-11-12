@@ -15,7 +15,7 @@ plugins {
 val baseAppName = "MMRL"
 val mmrlBaseApplicationId = "com.dergoogler.mmrl"
 
-val appVersion = commitCount + 31320
+val appVersion = maxOf(commitCount + 31320, 34404)
 
 android {
     compileSdk = COMPILE_SDK
